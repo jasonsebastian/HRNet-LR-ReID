@@ -1,6 +1,5 @@
 import argparse
 import os
-import time
 from tqdm import tqdm
 
 import numpy as np
@@ -8,15 +7,11 @@ import scipy.io
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
 from torch.autograd import Variable
-import torchvision
-from torchvision import datasets, models, transforms
+from torchvision import datasets, transforms
 
 from config import config
 from config import update_config
-from core.evaluate import sort_index
 import models
 from utils.utils import unpack
 
@@ -31,11 +26,13 @@ def parse_args():
     update_config(config, args)
     return args
 
+
 def fliplr(img):
     '''flip horizontal'''
-    inv_idx = torch.arange(img.size(3)-1,-1,-1).long()  # N x C x H x W
-    img_flip = img.index_select(3,inv_idx)
+    inv_idx = torch.arange(img.size(3) - 1, -1, -1).long()  # N x C x H x W
+    img_flip = img.index_select(3, inv_idx)
     return img_flip
+
 
 def extract_feature(config, model, dataloaders):
     features = torch.FloatTensor()
@@ -54,8 +51,9 @@ def extract_feature(config, model, dataloaders):
             ff += outputs.data.cpu()
         fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)
         ff = ff.div(fnorm.expand_as(ff))
-        features = torch.cat((features,ff), 0)
+        features = torch.cat((features, ff), 0)
     return features
+
 
 def get_id(img_path):
     camera_id = []
@@ -64,12 +62,13 @@ def get_id(img_path):
         filename = os.path.basename(path)
         label = filename[0:4]
         camera = filename.split('c')[1]
-        if label[0:2]=='-1':
+        if label[0:2] == '-1':
             labels.append(-1)
         else:
             labels.append(int(label))
         camera_id.append(int(camera[0]))
     return camera_id, labels
+
 
 def create_features_file(config, model_state_file, features_path):
     gpus = list(config.GPUS)
@@ -105,12 +104,12 @@ def create_features_file(config, model_state_file, features_path):
     image_datasets = {x: datasets.ImageFolder(
         os.path.join(test_dir, x),
         data_transforms
-    ) for x in ['gallery','query']}
+    ) for x in ['gallery', 'query']}
     dataloaders = {x: torch.utils.data.DataLoader(
         image_datasets[x],
         batch_size=config.TEST.BATCH_SIZE_PER_GPU,
         shuffle=False, pin_memory=True
-    ) for x in ['gallery','query']}
+    ) for x in ['gallery', 'query']}
 
     # Extract feature
     gallery_feature = extract_feature(config, model, dataloaders['gallery'])
@@ -132,6 +131,7 @@ def create_features_file(config, model_state_file, features_path):
     scipy.io.savemat(features_path, result)
     print('=> features file successfully created at {}'.format(features_path))
 
+
 def compute_mAP(qf, ql, qc, gf, gl, gc):
     query = qf.view(-1, 1)
     score = torch.mm(gf, query)
@@ -139,17 +139,17 @@ def compute_mAP(qf, ql, qc, gf, gl, gc):
     score = score.numpy()
     index = np.argsort(score)[::-1]  # predict index from large to small
 
-    query_index = np.argwhere(gl==ql)
-    camera_index = np.argwhere(gc==qc)
+    query_index = np.argwhere(gl == ql)
+    camera_index = np.argwhere(gc == qc)
 
     good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
-    junk_index1 = np.argwhere(gl==-1)
+    junk_index1 = np.argwhere(gl == -1)
     junk_index2 = np.intersect1d(query_index, camera_index)
     junk_index = np.append(junk_index2, junk_index1)
 
     ap = 0
     cmc = torch.IntTensor(len(index)).zero_()
-    if good_index.size == 0:   # if empty
+    if good_index.size == 0:  # if empty
         cmc[0] = -1
         return ap, cmc
 
@@ -160,20 +160,21 @@ def compute_mAP(qf, ql, qc, gf, gl, gc):
     # find good_index index
     ngood = len(good_index)
     mask = np.in1d(index, good_index)
-    rows_good = np.argwhere(mask==True)
+    rows_good = np.argwhere(mask == True)
     rows_good = rows_good.flatten()
 
     cmc[rows_good[0]:] = 1
     for i in range(ngood):
         d_recall = 1 / ngood
-        precision = (i+1) / (rows_good[i]+1)
+        precision = (i + 1) / (rows_good[i] + 1)
         if rows_good[i] != 0:
             old_precision = i / rows_good[i]
         else:
             old_precision = 1
-        ap += d_recall * (old_precision+precision)/2
+        ap += d_recall * (old_precision + precision) / 2
 
     return ap, cmc
+
 
 def evaluate(features_path):
     data = unpack(features_path)
@@ -190,8 +191,8 @@ def evaluate(features_path):
             continue
         ap, CMC = ap + ap_tmp, CMC + CMC_tmp
     CMC = CMC.float()
-    CMC = CMC / len(data['query_label']) #average CMC
-    print('Rank@1:%f Rank@5:%f Rank@10:%f mAP:%f'%(CMC[0],CMC[4],CMC[9],ap/len(data['query_label'])))
+    CMC = CMC / len(data['query_label'])  # average CMC
+    print('Rank@1:%f Rank@5:%f Rank@10:%f mAP:%f' % (CMC[0], CMC[4], CMC[9], ap / len(data['query_label'])))
 
 
 def main():
@@ -218,6 +219,7 @@ def main():
         print('=> using features file from {}'.format(features_path))
 
     evaluate(features_path)
+
 
 if __name__ == '__main__':
     main()

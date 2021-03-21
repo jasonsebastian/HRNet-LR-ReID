@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 from tqdm import tqdm
 
@@ -10,14 +9,13 @@ from apex.fp16_utils import *
 from apex import amp, optimizers
 
 from core.evaluate import accuracy
-from utils.utils import get_hms_from_sec, round_decimal, set_learning_rate
-
+from utils.utils import round_decimal, set_learning_rate
 
 logger = logging.getLogger(__name__)
 
 
 def train(config, train_loader, model, criterion, optimizer, epoch, device,
-          output_dir, tb_log_dir, writer_dict):
+          writer_dict):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -101,8 +99,7 @@ def train(config, train_loader, model, criterion, optimizer, epoch, device,
                 t.set_postfix(loss=losses.avg, accuracy=top1.avg)
 
 
-def validate(config, val_loader, model, criterion, device,
-             output_dir, tb_log_dir, writer_dict=None):
+def validate(config, val_loader, model, criterion, device, writer_dict=None):
     batch_time = AverageMeter()
     if config.MODEL.SR_NAME:
         losses_sr = AverageMeter()
@@ -157,16 +154,16 @@ def validate(config, val_loader, model, criterion, device,
                   'Reid loss {loss_reid.avg:.4f}\t' \
                   'Error@1 {error1:.3f}\t' \
                   'Accuracy@1 {top1.avg:.3f}\t'.format(
-                      batch_time=batch_time, loss=losses,
-                      loss_sr=losses_sr, loss_reid=losses_reid,
-                      top1=top1, error1=100-top1.avg)
+                batch_time=batch_time, loss=losses,
+                loss_sr=losses_sr, loss_reid=losses_reid,
+                top1=top1, error1=100 - top1.avg)
         else:
             msg = 'Test: Time {batch_time.avg:.3f}\t' \
                   'Loss {loss.avg:.4f}\t' \
                   'Error@1 {error1:.3f}\t' \
                   'Accuracy@1 {top1.avg:.3f}\t'.format(
-                      batch_time=batch_time, loss=losses,
-                      top1=top1, error1=100-top1.avg)
+                batch_time=batch_time, loss=losses,
+                top1=top1, error1=100 - top1.avg)
 
         logger.info(msg)
 
@@ -182,6 +179,7 @@ def validate(config, val_loader, model, criterion, device,
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 

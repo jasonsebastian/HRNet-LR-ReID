@@ -21,13 +21,16 @@ def imshow(ax, img, title=None):
     if title is not None:
         ax.set_title(title)
 
+
 def get_image_path(dataset, i):
     return dataset.imgs[i][0]
+
 
 def unnormalize(tensor, mean, std):
     for i in range(tensor.size(0)):
         tensor[i] = tensor[i] * std[i] + mean[i]
     return tensor
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Demo')
@@ -43,6 +46,7 @@ def parse_args():
                         help='Top k results',
                         default=10)
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -71,9 +75,9 @@ def main():
     model.load_state_dict(model_dict)
 
     while True:
-        fig, ax = plt.subplots(args.n, args.k+2, figsize=(36, 24))
+        fig, ax = plt.subplots(args.n, args.k + 2, figsize=(36, 24))
         for i in range(args.n):
-            q = random.randint(0, len(data['query_label'])-1)
+            q = random.randint(0, len(data['query_label']) - 1)
             query_path = get_image_path(query_dataset, q)
             print('Query path: {}'.format(query_path))
 
@@ -85,14 +89,13 @@ def main():
                 transforms.ToTensor(),
                 transforms.Normalize(mean, std)
             ])
-            img_transformed = torch.unsqueeze(t(img), 0) # Simulate batch of size 1
+            img_transformed = torch.unsqueeze(t(img), 0)  # Simulate batch of size 1
             sr = model(img_transformed)
             sr = torch.squeeze(sr, 0).detach()
 
             sr = unnormalize(sr, mean, std)
 
             imshow(ax[i][0], img, 'Query')
-            # imshow(ax[i][1], img.resize((128, 256)), 'Bicubic')
             imshow(ax[i][1], sr.numpy().transpose((1, 2, 0)), 'VDSR')
 
             index = sort_index(data['query_feature'][q],
@@ -106,13 +109,14 @@ def main():
             for j in range(args.k):
                 img_path = get_image_path(gallery_dataset, index[j])
                 print(img_path)
-                imshow(ax[i][j+2], plt.imread(img_path))
+                imshow(ax[i][j + 2], plt.imread(img_path))
                 label = data['gallery_label'][index[j]]
                 if label == data['query_label'][q]:
-                    ax[i][j+2].set_title(str(j+1), color='green')
+                    ax[i][j + 2].set_title(str(j + 1), color='green')
                 else:
-                    ax[i][j+2].set_title(str(j+1), color='red')
+                    ax[i][j + 2].set_title(str(j + 1), color='red')
         plt.show()
+
 
 if __name__ == '__main__':
     main()

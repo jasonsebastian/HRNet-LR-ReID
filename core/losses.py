@@ -12,6 +12,6 @@ class MSEFilterLoss:
     def create_filter(self, x, val):
         n, c, h, w = x.shape
         k = np.zeros((h, w))
-        k[h//2, w//2] = val
-        f = scipy.ndimage.gaussian_filter(k, sigma=(h//4, w//4))
+        k[h // 2, w // 2] = val
+        f = scipy.ndimage.gaussian_filter(k, sigma=(h // 4, w // 4))
         return np.stack([[f for _ in range(c)] for _ in range(n)])

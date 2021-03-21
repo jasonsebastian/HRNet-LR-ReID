@@ -1,4 +1,3 @@
-import logging
 import math
 import os
 
@@ -54,6 +53,7 @@ class VDSR(nn.Module):
             #     print('=> loading {} pretrained model {}'.format(k, pretrained))
             model_dict.update(pretrained_dict)
             self.load_state_dict(model_dict)
+
 
 def get_vdsr():
     model = VDSR()
