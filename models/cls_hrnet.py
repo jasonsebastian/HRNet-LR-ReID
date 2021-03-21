@@ -552,6 +552,4 @@ def get_cls_hrnet(config, pretrained=False, **kwargs):
     else:
         model.init_weights()
     model.classifier = nn.Linear(2048, config.MODEL.NUM_CLASSES)
-    print('=> num of elements in model: {:.5E}'.format(
-        sum(p.numel() for p in model.parameters())))
     return model
