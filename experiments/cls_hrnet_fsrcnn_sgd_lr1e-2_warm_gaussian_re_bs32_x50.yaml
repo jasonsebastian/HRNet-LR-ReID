@@ -1,0 +1,102 @@
+GPUS: (0,)
+LOG_DIR: 'log/'
+DATA_DIR: '../data'
+OUTPUT_DIR: 'output/'
+WORKERS: 4
+PRINT_FREQ: 50
+FP16: true
+
+MODEL: 
+  NAME: cls_hrnet
+  SR_NAME: fsrcnn
+  IMAGE_SIZE: 
+    - 256
+    - 128
+  PRETRAINED: hrnetv2_w32_imagenet_pretrained.pth
+  NUM_CLASSES: 751
+  EXTRA:
+    STAGE1:
+      NUM_MODULES: 1
+      NUM_RANCHES: 1
+      BLOCK: BOTTLENECK
+      NUM_BLOCKS:
+      - 4
+      NUM_CHANNELS:
+      - 64
+      FUSE_METHOD: SUM
+    STAGE2:
+      NUM_MODULES: 1
+      NUM_BRANCHES: 2
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 4
+      - 4
+      NUM_CHANNELS:
+      - 32
+      - 64
+      FUSE_METHOD: SUM
+    STAGE3:
+      NUM_MODULES: 4
+      NUM_BRANCHES: 3
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 4
+      - 4
+      - 4
+      NUM_CHANNELS:
+      - 32
+      - 64
+      - 128
+      FUSE_METHOD: SUM
+    STAGE4:
+      NUM_MODULES: 3
+      NUM_BRANCHES: 4
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 4
+      - 4
+      - 4
+      - 4
+      NUM_CHANNELS:
+      - 32
+      - 64
+      - 128
+      - 256
+      FUSE_METHOD: SUM
+CUDNN:
+  BENCHMARK: true
+  DETERMINISTIC: false
+  ENABLED: true
+DATASET:
+  ORIGINAL_DATASET: 'market1501'
+  DOWNSAMPLED_DATASET: 'mlr_market1501'
+  DATA_FORMAT: 'jpg'
+  ORIGINAL_ROOT: '../data/market1501'
+  DOWNSAMPLED_ROOT: '../data/mlr_market1501'
+  TEST_SET: 'pytorch/val'
+  TRAIN_SET: 'pytorch/train'
+TEST:
+  BATCH_SIZE_PER_GPU: 8
+  MODEL_FILE: ''
+TRAIN:
+  BATCH_SIZE_PER_GPU: 32
+  BEGIN_EPOCH: 0
+  END_EPOCH: 50
+  RESUME: false
+  LR_FACTOR: 0.1
+  LR_STEP: 30
+  WARM_FACTOR: 0.05
+  WARM_MODE: linear
+  OPTIMIZER: sgd
+  LR: 0.01
+  WD: 0.0005
+  MOMENTUM: 0.9
+  ALPHA: 1.0
+  SR_MUL: 1.0
+  NESTEROV: true
+  SHUFFLE: true
+  SR_FILTER: true
+  FILTER_VAL: 10000
+  RANDOM_ERASING: true
+DEBUG:
+  DEBUG: false
