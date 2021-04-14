@@ -39,22 +39,24 @@ def create_logger(cfg, cfg_name, phase='train'):
     logging.getLogger('').addHandler(console)
 
     tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / model / \
-            (cfg_name + '_' + time_str)
+                          (cfg_name + '_' + time_str)
     print('=> creating {}'.format(tensorboard_log_dir))
     tensorboard_log_dir.mkdir(parents=True, exist_ok=True)
 
     return logger, str(final_output_dir), str(tensorboard_log_dir)
 
+
 def get_optimizer(cfg, model):
     optimizer = None
     if cfg.TRAIN.OPTIMIZER == 'sgd':
         if cfg.MODEL.SR_NAME:
-            sr_params = list(map(id, model.sr.parameters()))
-            base_params = filter(lambda p: id(p) not in sr_params, model.parameters())
+            base_params = filter(lambda p: id(p) not in list(map(id, model.sr.parameters())),
+                                 model.parameters())
             optimizer = optim.SGD(
-                [{'params': base_params, 'lr' : cfg.TRAIN.LR},
+                [{'params': base_params},
                  {'params': model.sr.parameters(),
                   'lr': cfg.TRAIN.LR * cfg.TRAIN.SR_MUL}],
+                lr=cfg.TRAIN.LR,
                 weight_decay=cfg.TRAIN.WD,
                 momentum=cfg.TRAIN.MOMENTUM,
                 nesterov=cfg.TRAIN.NESTEROV)
@@ -66,12 +68,22 @@ def get_optimizer(cfg, model):
                 momentum=cfg.TRAIN.MOMENTUM,
                 nesterov=cfg.TRAIN.NESTEROV)
     elif cfg.TRAIN.OPTIMIZER == 'adam':
-        optimizer = optim.Adam(
-            [{'params': base_params, 'lr' : cfg.TRAIN.LR},
-             {'params': model.sr.parameters(),
-              'lr': cfg.TRAIN.LR * cfg.TRAIN.SR_MUL}]
-        )
+        if cfg.MODEL.SR_NAME:
+            base_params = filter(lambda p: id(p) not in list(map(id, model.sr.parameters())),
+                                 model.parameters())
+            optimizer = optim.Adam(
+                [{'params': base_params},
+                 {'params': model.sr.parameters(),
+                  'lr': cfg.TRAIN.LR * cfg.TRAIN.SR_MUL}],
+                lr=cfg.TRAIN.LR
+            )
+        else:
+            optimizer = optim.Adam(
+                model.sr.parameters(),
+                lr=cfg.TRAIN.LR
+            )
     return optimizer
+
 
 def set_learning_rate(cfg, optimizer, epoch):
     begin_lr = [cfg.TRAIN.LR, cfg.TRAIN.LR * cfg.TRAIN.SR_MUL]
@@ -86,13 +98,16 @@ def set_learning_rate(cfg, optimizer, epoch):
         else:
             group['lr'] = begin_lr[i] * pow(cfg.TRAIN.LR_FACTOR, epoch // cfg.TRAIN.LR_STEP)
 
+
 def get_hms_from_sec(seconds):
     seconds = round(seconds)
     h, m, s = map(int, str(datetime.timedelta(seconds=seconds)).split(':'))
     return h, m, s
 
+
 def round_decimal(number):
     return round(number, abs(math.floor(math.log10(number))))
+
 
 def save_checkpoint(states, is_best, output_dir,
                     filename='checkpoint.pth.tar'):
@@ -100,6 +115,7 @@ def save_checkpoint(states, is_best, output_dir,
     if is_best and 'state_dict' in states:
         torch.save(states['state_dict'],
                    os.path.join(output_dir, 'model_best.pth.tar'))
+
 
 def unpack(features_path):
     result = scipy.io.loadmat(features_path)

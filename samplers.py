@@ -3,7 +3,6 @@ import copy
 import numpy as np
 import random
 
-import torch
 from torch.utils.data.sampler import Sampler
 
 
@@ -17,6 +16,7 @@ class RandomIdentitySampler(Sampler):
     - num_instances (int): number of instances per identity in a batch.
     - batch_size (int): number of examples in a batch.
     """
+
     def __init__(self, dataset, batch_size, num_instances):
         self.dataset = dataset
         self.batch_size = batch_size

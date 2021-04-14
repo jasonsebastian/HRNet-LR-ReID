@@ -4,7 +4,6 @@ import time
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from tensorboardX import SummaryWriter
 
 from apex.fp16_utils import *
@@ -34,6 +33,7 @@ def parse_args():
     args = parser.parse_args()
     update_config(config, args)
     return args
+
 
 def main():
     args = parse_args()
@@ -110,10 +110,10 @@ def main():
         print('Epoch {}/{}'.format(epoch + 1, config.TRAIN.END_EPOCH))
 
         train(config, train_loader, model, criterion, optimizer, epoch, device,
-              final_output_dir, tb_log_dir, writer_dict)
+              writer_dict)
 
         perf_indicator = validate(config, valid_loader, model, criterion, device,
-                                  final_output_dir, tb_log_dir, writer_dict)
+                                  writer_dict)
 
         if perf_indicator > best_perf:
             best_perf = perf_indicator
@@ -143,6 +143,7 @@ def main():
         final_model_state_file))
     torch.save(model.state_dict(), final_model_state_file)
     writer_dict['writer'].close()
+
 
 if __name__ == '__main__':
     main()

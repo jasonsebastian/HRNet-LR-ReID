@@ -5,10 +5,6 @@
 # Modified by Ke Sun (sunk@mail.ustc.edu.cn)
 # ------------------------------------------------------------------------------
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import logging
 import functools
@@ -83,7 +79,7 @@ class Bottleneck(nn.Module):
         self.conv3 = nn.Conv2d(planes, planes * self.expansion, kernel_size=1,
                                bias=False)
         self.bn3 = nn.BatchNorm2d(planes * self.expansion,
-                               momentum=BN_MOMENTUM)
+                                  momentum=BN_MOMENTUM)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -160,13 +156,13 @@ class HighResolutionModule(nn.Module):
                          stride=1, attn=''):
         downsample = None
         if stride != 1 or \
-           self.num_inchannels[branch_index] != num_channels[branch_index] * block.expansion:
+                self.num_inchannels[branch_index] != num_channels[branch_index] * block.expansion:
             downsample = nn.Sequential(
                 nn.Conv2d(self.num_inchannels[branch_index],
                           num_channels[branch_index] * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(num_channels[branch_index] * block.expansion,
-                            momentum=BN_MOMENTUM),
+                               momentum=BN_MOMENTUM),
             )
 
         layers = []
@@ -207,22 +203,22 @@ class HighResolutionModule(nn.Module):
                                   1,
                                   0,
                                   bias=False),
-                        nn.BatchNorm2d(num_inchannels[i], 
+                        nn.BatchNorm2d(num_inchannels[i],
                                        momentum=BN_MOMENTUM),
-                        nn.Upsample(scale_factor=2**(j-i), mode='nearest')))
+                        nn.Upsample(scale_factor=2 ** (j - i), mode='nearest')))
                 elif j == i:
                     fuse_layer.append(None)
                 else:
                     conv3x3s = []
-                    for k in range(i-j):
+                    for k in range(i - j):
                         if k == i - j - 1:
                             num_outchannels_conv3x3 = num_inchannels[i]
                             conv3x3s.append(nn.Sequential(
                                 nn.Conv2d(num_inchannels[j],
                                           num_outchannels_conv3x3,
                                           3, 2, 1, bias=False),
-                                nn.BatchNorm2d(num_outchannels_conv3x3, 
-                                            momentum=BN_MOMENTUM)))
+                                nn.BatchNorm2d(num_outchannels_conv3x3,
+                                               momentum=BN_MOMENTUM)))
                         else:
                             num_outchannels_conv3x3 = num_inchannels[j]
                             conv3x3s.append(nn.Sequential(
@@ -230,7 +226,7 @@ class HighResolutionModule(nn.Module):
                                           num_outchannels_conv3x3,
                                           3, 2, 1, bias=False),
                                 nn.BatchNorm2d(num_outchannels_conv3x3,
-                                            momentum=BN_MOMENTUM),
+                                               momentum=BN_MOMENTUM),
                                 nn.ReLU(False)))
                     fuse_layer.append(nn.Sequential(*conv3x3s))
             fuse_layers.append(nn.ModuleList(fuse_layer))
@@ -290,7 +286,7 @@ class HighResolutionNet(nn.Module):
         num_blocks = self.stage1_cfg['NUM_BLOCKS'][0]
         self.layer1 = self._make_layer(block, 64, num_channels, num_blocks,
                                        attn=cfg.MODEL.ATTN)
-        stage1_out_channel = block.expansion*num_channels
+        stage1_out_channel = block.expansion * num_channels
 
         self.stage2_cfg = cfg['MODEL']['EXTRA']['STAGE2']
         num_channels = self.stage2_cfg['NUM_CHANNELS']
@@ -325,11 +321,11 @@ class HighResolutionNet(nn.Module):
 
         # Classification Head
         self.incre_modules, self.downsamp_modules, \
-            self.final_layer = self._make_head(pre_stage_channels,
-                                               attn=cfg.MODEL.ATTN)
+        self.final_layer = self._make_head(pre_stage_channels,
+                                           attn=cfg.MODEL.ATTN)
 
         self.classifier = nn.Linear(2048, 1000)
- 
+
     def _make_head(self, pre_stage_channels, attn=''):
         head_block = Bottleneck
         head_channels = [32, 64, 128, 256]
@@ -337,7 +333,7 @@ class HighResolutionNet(nn.Module):
         # Increasing the #channels on each resolution 
         # from C, 2C, 4C, 8C to 128, 256, 512, 1024
         incre_modules = []
-        for i, channels  in enumerate(pre_stage_channels):
+        for i, channels in enumerate(pre_stage_channels):
             incre_module = self._make_layer(head_block,
                                             channels,
                                             head_channels[i],
@@ -346,12 +342,12 @@ class HighResolutionNet(nn.Module):
                                             attn=attn)
             incre_modules.append(incre_module)
         incre_modules = nn.ModuleList(incre_modules)
-            
+
         # downsampling modules
         downsamp_modules = []
-        for i in range(len(pre_stage_channels)-1):
+        for i in range(len(pre_stage_channels) - 1):
             in_channels = head_channels[i] * head_block.expansion
-            out_channels = head_channels[i+1] * head_block.expansion
+            out_channels = head_channels[i + 1] * head_block.expansion
 
             downsamp_module = nn.Sequential(
                 nn.Conv2d(in_channels=in_channels,
@@ -403,10 +399,10 @@ class HighResolutionNet(nn.Module):
                     transition_layers.append(None)
             else:
                 conv3x3s = []
-                for j in range(i+1-num_branches_pre):
+                for j in range(i + 1 - num_branches_pre):
                     inchannels = num_channels_pre_layer[-1]
                     outchannels = num_channels_cur_layer[i] \
-                        if j == i-num_branches_pre else inchannels
+                        if j == i - num_branches_pre else inchannels
                     conv3x3s.append(nn.Sequential(
                         nn.Conv2d(
                             inchannels, outchannels, 3, 2, 1, bias=False),
@@ -452,13 +448,13 @@ class HighResolutionNet(nn.Module):
 
             modules.append(
                 HighResolutionModule(num_branches,
-                                      block,
-                                      num_blocks,
-                                      num_inchannels,
-                                      num_channels,
-                                      fuse_method,
-                                      reset_multi_scale_output,
-                                      attn)
+                                     block,
+                                     num_blocks,
+                                     num_inchannels,
+                                     num_channels,
+                                     fuse_method,
+                                     reset_multi_scale_output,
+                                     attn)
             )
             num_inchannels = modules[-1].get_num_inchannels()
 
@@ -504,8 +500,8 @@ class HighResolutionNet(nn.Module):
         # Classification Head
         y = self.incre_modules[0](y_list[0])
         for i in range(len(self.downsamp_modules)):
-            y = self.incre_modules[i+1](y_list[i+1]) + \
-                        self.downsamp_modules[i](y)
+            y = self.incre_modules[i + 1](y_list[i + 1]) + \
+                self.downsamp_modules[i](y)
 
         y = self.final_layer(y)
 
@@ -513,7 +509,7 @@ class HighResolutionNet(nn.Module):
             y = y.flatten(start_dim=2).mean(dim=2)
         else:
             y = F.avg_pool2d(y, kernel_size=y.size()
-                                 [2:]).view(y.size(0), -1)
+            [2:]).view(y.size(0), -1)
 
         y = self.classifier(y)
 
@@ -522,7 +518,7 @@ class HighResolutionNet(nn.Module):
         else:
             return y, sr
 
-    def init_weights(self, pretrained='',):
+    def init_weights(self, pretrained='', ):
         print('=> init HRNet weights from normal distribution')
         for m in self.modules():
             if m.__class__.__name__ == 'VDSR':
@@ -552,6 +548,4 @@ def get_cls_hrnet(config, pretrained=False, **kwargs):
     else:
         model.init_weights()
     model.classifier = nn.Linear(2048, config.MODEL.NUM_CLASSES)
-    print('=> num of elements in model: {:.5E}'.format(
-        sum(p.numel() for p in model.parameters())))
     return model

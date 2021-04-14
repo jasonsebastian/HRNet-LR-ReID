@@ -32,5 +32,6 @@ class STN(nn.Module):
         x = F.grid_sample(x, grid)
         return x
 
+
 def get_stn():
     return STN()

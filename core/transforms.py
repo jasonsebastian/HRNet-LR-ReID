@@ -110,22 +110,22 @@ class RandomErasing:
             downsampled_image = sample['downsampled_image']
             channel, height, width = original_image.size()
             target_area = random.uniform(self.sl, self.sh) * height * width
-            aspect_ratio = random.uniform(self.r1, 1/self.r1)
+            aspect_ratio = random.uniform(self.r1, 1 / self.r1)
             h = int(round(math.sqrt(target_area * aspect_ratio)))
             w = int(round(math.sqrt(target_area / aspect_ratio)))
             if w < width and h < height:
                 x1 = random.randint(0, height - h)
                 y1 = random.randint(0, width - w)
                 if channel == 3:
-                    original_image[0, x1:x1+h, y1:y1+w] = self.mean[0]
-                    original_image[1, x1:x1+h, y1:y1+w] = self.mean[1]
-                    original_image[2, x1:x1+h, y1:y1+w] = self.mean[2]
-                    downsampled_image[0, x1:x1+h, y1:y1+w] = self.mean[0]
-                    downsampled_image[1, x1:x1+h, y1:y1+w] = self.mean[1]
-                    downsampled_image[2, x1:x1+h, y1:y1+w] = self.mean[2]
+                    original_image[0, x1:x1 + h, y1:y1 + w] = self.mean[0]
+                    original_image[1, x1:x1 + h, y1:y1 + w] = self.mean[1]
+                    original_image[2, x1:x1 + h, y1:y1 + w] = self.mean[2]
+                    downsampled_image[0, x1:x1 + h, y1:y1 + w] = self.mean[0]
+                    downsampled_image[1, x1:x1 + h, y1:y1 + w] = self.mean[1]
+                    downsampled_image[2, x1:x1 + h, y1:y1 + w] = self.mean[2]
                 else:
-                    original_image[0, x1:x1+h, y1:y1+w] = self.mean[0]
-                    downsampled_image[0, x1:x1+h, y1:y1+w] = self.mean[0]
+                    original_image[0, x1:x1 + h, y1:y1 + w] = self.mean[0]
+                    downsampled_image[0, x1:x1 + h, y1:y1 + w] = self.mean[0]
                 return sample
 
         return sample
